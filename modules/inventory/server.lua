@@ -2,6 +2,14 @@ if not lib then return end
 
 local Inventory = {}
 
+
+local NoStealList = {
+	--Examples
+	--"WEAPON_PISTOL",
+	--"WEAPON_APPISTOL"
+}
+
+
 ---@type table<any, OxInventory>
 local Inventories = {}
 
@@ -898,6 +906,11 @@ function Inventory.SwapSlots(fromInventory, toInventory, slot1, slot2)
 	local fromSlot = fromInventory.items[slot1] and table.clone(fromInventory.items[slot1]) or nil
 	local toSlot = toInventory.items[slot2] and table.clone(toInventory.items[slot2]) or nil
 
+	if tableContains(NoStealList, fromSlot.name) and fromInventory.type == 'player' and toInventory.type == 'player' then  
+		TriggerClientEvent('ox_lib:notify', source, { title = 'Failed to Steal', type = 'error', description = 'Unable to steal this item' })
+		return 
+	end
+
 	if fromSlot then fromSlot.slot = slot2 end
 	if toSlot then toSlot.slot = slot1 end
 
@@ -1752,6 +1765,12 @@ lib.callback.register('ox_inventory:swapItems', function(source, data)
 							TriggerClientEvent('ox_inventory:itemNotify', toInventory.id, { toData, 'ui_removed', toData.count })
 						end
 
+						if (tableContains(NoStealList, fromData.name) or tableContains(NoStealList, toData.name)) 
+							and fromInventory.type == 'player' and toInventory.type == 'player' then  
+							TriggerClientEvent('ox_lib:notify', source, { title = 'Failed to Steal', type = 'error', description = 'Unable to steal this item' })
+							return 
+						end
+
 						fromInventory.weight = fromWeight
 						toInventory.weight = toWeight
 						toData, fromData = Inventory.SwapSlots(fromInventory, toInventory, data.fromSlot, data.toSlot) --[[@as table]]
@@ -1762,6 +1781,12 @@ lib.callback.register('ox_inventory:swapItems', function(source, data)
 					else return false, 'cannot_carry' end
 				else
 					if not TriggerEventHooks('swapItems', hookPayload) then return end
+
+					if (tableContains(NoStealList, fromData.name) or tableContains(NoStealList, toData.name)) 
+						and fromInventory.type == 'player' and toInventory.type == 'player' then  
+						TriggerClientEvent('ox_lib:notify', source, { title = 'Failed to Steal', type = 'error', description = 'Unable to steal this item' })
+						return 
+					end
 
 					toData, fromData = Inventory.SwapSlots(fromInventory, toInventory, data.fromSlot, data.toSlot)
 				end
@@ -1816,6 +1841,11 @@ lib.callback.register('ox_inventory:swapItems', function(source, data)
 				toData.count = data.count
 				toData.slot = data.toSlot
 				toData.weight = Inventory.SlotWeight(Items(toData.name), toData)
+
+				if tableContains(NoStealList, toData.name) and data.fromType == 'otherplayer' and data.toType == 'player' then 
+					TriggerClientEvent('ox_lib:notify', source, { title = 'Failed to Steal', type = 'error', description = 'Unable to steal this item' })
+					return 
+				end
 
 				if fromInventory.type == 'container' or sameInventory or (toInventory.weight + toData.weight <= toInventory.maxWeight) then
 					hookPayload.action = 'move'
