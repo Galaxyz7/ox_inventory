@@ -17,6 +17,15 @@ local Inventories = {}
 local OxInventory = {}
 OxInventory.__index = OxInventory
 
+function tableContains(table, value)
+	for _, v in ipairs(table) do
+		if v == value then
+			return true
+		end
+	end
+	return false
+end
+
 ---Open a player's inventory, optionally with a secondary inventory.
 ---@param inv? inventory
 function OxInventory:openInventory(inv)
